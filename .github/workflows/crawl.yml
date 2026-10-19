@@ -10,6 +10,9 @@ on:
     paths:
       - .github/workflows/crawl.yml
       - filter_and_stats.py
+  schedule:
+    # Daily at 07:40 UTC, after chains publish (by 08:00 local time).
+    - cron: "40 7 * * *"
   workflow_dispatch:
     inputs:
       city:
@@ -19,9 +22,27 @@ on:
 env:
   CIJENE_API_SHA: ce6b6e005c1b0519714a2091fe34e5d322a6a7e6
   CITY: ${{ inputs.city || 'Split' }}
+  # Scheduled runs stop after this date (one-week measurement window).
+  SCHEDULE_UNTIL: "2026-10-26"
 
 jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [[ "$(date -u +%F)" > "$SCHEDULE_UNTIL" ]]; then
+            echo "Scheduled window ended on $SCHEDULE_UNTIL, skipping."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
   crawl:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -63,8 +84,8 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: crawl
-    if: ${{ !cancelled() }}
+    needs: [gate, crawl]
+    if: ${{ !cancelled() && needs.gate.outputs.run == 'true' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -94,6 +115,9 @@ jobs:
           done
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Pointer for clients that want the newest sample.
+          chains=$(ls "data/$day" | python3 -c "import sys,json; print(json.dumps(sorted(l.strip() for l in sys.stdin if l.strip())))")
+          printf '{"date":"%s","city":"%s","chains":%s}\n' "$day" "$CITY" "$chains" > data/latest.json
           git add data
           if git diff --cached --quiet; then
             echo "Nothing to publish"

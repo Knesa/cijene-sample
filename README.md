@@ -13,5 +13,7 @@ Daily sample of public Croatian retail price lists, used for prototyping.
   for the whole chain, and `stats.json` computed over all stores of the chain.
 - **Chains:** Konzum, Lidl, Kaufland.
 
+Runs daily at 07:40 UTC until 2026-10-26 (one-week window). `data/latest.json` points to the newest day.
+
 Run it manually from the Actions tab (`crawl`, optional `city` input) or by
 pushing changes to the workflow or `filter_and_stats.py`.
