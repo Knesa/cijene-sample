@@ -1,0 +1,103 @@
+name: crawl
+
+# Crawl public retailer price lists (NN 75/2025) with the unmodified
+# senko/cijene-api crawler, keep a per-city sample plus stats, and publish
+# them to the `data` branch of this repository.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/crawl.yml
+      - filter_and_stats.py
+  workflow_dispatch:
+    inputs:
+      city:
+        description: City to keep in the sample
+        default: Split
+
+env:
+  CIJENE_API_SHA: ce6b6e005c1b0519714a2091fe34e5d322a6a7e6
+  CITY: ${{ inputs.city || 'Split' }}
+
+jobs:
+  crawl:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        chain: [konzum, lidl, kaufland]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: repo
+
+      - uses: actions/checkout@v4
+        with:
+          repository: senko/cijene-api
+          ref: ${{ env.CIJENE_API_SHA }}
+          path: cijene
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install crawler
+        working-directory: cijene
+        run: uv sync
+
+      - name: Crawl ${{ matrix.chain }}
+        working-directory: cijene
+        run: uv run -m crawler.cli.crawl -c ${{ matrix.chain }} -z false -v info "$GITHUB_WORKSPACE/raw"
+
+      - name: Filter and stats
+        run: |
+          crawl_dir=$(ls -d "$GITHUB_WORKSPACE"/raw/*/ | head -n 1)
+          python3 repo/filter_and_stats.py "$crawl_dir" "$GITHUB_WORKSPACE/sample" --city "$CITY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sample-${{ matrix.chain }}
+          path: sample/
+          retention-days: 7
+
+  publish:
+    needs: crawl
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Commit sample to the data branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          day=$(date -u +%Y-%m-%d)
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git clone --depth 1 --branch data "$remote" publish; then
+            cd publish
+          else
+            mkdir publish && cd publish
+            git init -q
+            git checkout -q --orphan data
+            git remote add origin "$remote"
+          fi
+          mkdir -p "data/$day"
+          for dir in ../artifacts/sample-*/; do
+            [ -d "$dir" ] && cp -r "$dir"* "data/$day/"
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "Nothing to publish"
+            exit 0
+          fi
+          git commit -q -m "price sample ${day} (${CITY})"
+          git push origin data
