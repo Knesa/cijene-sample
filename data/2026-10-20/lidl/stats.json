@@ -1,0 +1,22 @@
+{
+  "chain": "lidl",
+  "stores_total": 116,
+  "stores_in_city": 5,
+  "city": "Split",
+  "products": 6922,
+  "products_with_ean": 6737,
+  "prices_total": 1635732,
+  "prices_in_city": 70500,
+  "special_price_rows": 14767,
+  "special_rows_with_best30": 14767,
+  "special_below_best30": 14017,
+  "products_priced": 6922,
+  "products_with_varying_price_across_stores": 68,
+  "varying_price_rel_range_median": 0.416210739614995,
+  "varying_price_rel_range_p90": 0.6362010082940316,
+  "raw_bytes": {
+    "stores": 6077,
+    "products": 495743,
+    "prices": 48552721
+  }
+}
