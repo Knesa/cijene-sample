@@ -1,0 +1,22 @@
+{
+  "chain": "kaufland",
+  "stores_total": 53,
+  "stores_in_city": 2,
+  "city": "Split",
+  "products": 19358,
+  "products_with_ean": 19315,
+  "prices_total": 736457,
+  "prices_in_city": 29782,
+  "special_price_rows": 48962,
+  "special_rows_with_best30": 48962,
+  "special_below_best30": 30182,
+  "products_priced": 19358,
+  "products_with_varying_price_across_stores": 604,
+  "varying_price_rel_range_median": 0.4194523799583708,
+  "varying_price_rel_range_p90": 1.842857142857143,
+  "raw_bytes": {
+    "stores": 2488,
+    "products": 1689055,
+    "prices": 24445109
+  }
+}
