@@ -1,0 +1,22 @@
+{
+  "chain": "konzum",
+  "stores_total": 188,
+  "stores_in_city": 4,
+  "city": "Split",
+  "products": 22225,
+  "products_with_ean": 21086,
+  "prices_total": 1823952,
+  "prices_in_city": 45373,
+  "special_price_rows": 212378,
+  "special_rows_with_best30": 212378,
+  "special_below_best30": 187593,
+  "products_priced": 22225,
+  "products_with_varying_price_across_stores": 13077,
+  "varying_price_rel_range_median": 0.07655502392344504,
+  "varying_price_rel_range_p90": 0.2575107296137337,
+  "raw_bytes": {
+    "stores": 9738,
+    "products": 1858239,
+    "prices": 61507722
+  }
+}
